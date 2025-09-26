@@ -1,0 +1,16 @@
+{
+  "hotkey": "ctrl+shift+space",
+  "paste_threshold": 100,
+  "silence_partial_ms": 300,
+  "silence_final_ms": 800,
+  "decode_cadence_ms": 300,
+  "aggressiveness": 2,
+  "model_gpu": "turbo",
+  "model_cpu": "small.en",
+  "language": null,
+  "task": "transcribe",
+  "logprob_threshold": -1.0,
+  "compression_ratio_threshold": 2.4,
+  "no_speech_threshold": 0.6,
+  "device_preference": "cuda"
+}

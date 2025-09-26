@@ -65,7 +65,7 @@ class Config:
     logprob_threshold: float = -1.0
     compression_ratio_threshold: float = 2.4
     no_speech_threshold: float = 0.6
-    device_preference: str = "auto"  # auto|cpu|cuda
+    device_preference: str = "cuda"  # cuda|cpu|auto (cuda will hard-fail if not available)
 
 
 class RingBuffer:
@@ -91,8 +91,11 @@ class Transcriber:
         if cfg.device_preference == "cpu":
             self.device = "cpu"
         elif cfg.device_preference == "cuda":
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        else:
+            if not torch.cuda.is_available():
+                print("[Whisper] GPU-only mode requested but CUDA is not available. Exiting.")
+                raise SystemExit(2)
+            self.device = "cuda"
+        else:  # auto
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         model_name = cfg.model_gpu if self.device == "cuda" else cfg.model_cpu
         print(f"[Whisper] Loading model '{model_name}' on {self.device}...")
@@ -467,9 +470,12 @@ def main():
         async def reload_model():
             if transcriber.running:
                 return JSONResponse({"error": "Stop dictation before reloading model"}, status_code=400)
-            # Reload model to pick up cfg.model_gpu/cfg.model_cpu
-            transcriber.__init__(cfg)
-            return JSONResponse({"ok": True, "device": transcriber.device})
+            # Reload model to pick up cfg.model_gpu/cfg.model_cpu and device preference
+            try:
+                transcriber.__init__(cfg)
+                return JSONResponse({"ok": True, "device": transcriber.device})
+            except SystemExit:
+                return JSONResponse({"error": "CUDA is not available; GPU-only mode cannot start."}, status_code=400)
 
         @app.post("/api/config")
         async def update_config(req: Request):

@@ -19,7 +19,25 @@ if %errorlevel% neq 0 (
 echo [Setup] Upgrading pip...
 %VENV_PY% -m pip install --upgrade pip setuptools wheel
 
-echo [Setup] Installing core Whisper dependencies...
+REM Optional: install CUDA-enabled PyTorch first for GPU use
+echo [Setup] Ensuring CUDA-enabled PyTorch (GPU)...
+REM Remove any existing CPU-only torch first
+%VENV_PIP% uninstall -y torch torchvision torchaudio >nul 2>nul
+REM Try CUDA 12.1 channel (GPU wheel)
+%VENV_PIP% install --no-cache-dir --force-reinstall --index-url https://download.pytorch.org/whl/cu121 torch -U
+if %errorlevel% neq 0 (
+  echo [Warn] CUDA 12.1 torch install failed; trying CUDA 12.4 channel...
+  %VENV_PIP% install --no-cache-dir --force-reinstall --index-url https://download.pytorch.org/whl/cu124 torch -U
+)
+echo [Check] Verifying CUDA availability in PyTorch...
+%VENV_PY% - <<PYCODE
+import torch
+print("torch:", torch.__version__)
+print("torch.version.cuda:", getattr(torch.version, 'cuda', None))
+print("cuda.is_available:", torch.cuda.is_available())
+PYCODE
+
+echo [Setup] Installing core Whisper package...
 REM Install this repository as a package (uses pyproject.toml)
 %VENV_PIP% install -e .
 if %errorlevel% neq 0 (
