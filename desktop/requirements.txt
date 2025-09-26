@@ -1,0 +1,8 @@
+sounddevice
+webrtcvad
+keyboard
+pyperclip
+fastapi
+uvicorn
+pystray
+pillow
